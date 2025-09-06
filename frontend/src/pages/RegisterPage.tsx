@@ -1,193 +1,143 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-
-interface FormData {
-  fullName: string;
-  email: string;
-  username: string;
-  password: string;
-  bio: string;
-  profilePicture: File | null;
-}
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { api } from "../api/axios";
+import { useSetRecoilState } from "recoil";
+import { loginState } from "../recoil/loginState";
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<FormData>({
-    fullName: '',
-    email: '',
-    username: '',
-    password: '',
-    bio: '',
-    profilePicture: null,
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const setLoginState = useSetRecoilState(loginState);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [bio, setBio] = useState("");
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    setFormData(prev => ({
-      ...prev,
-      profilePicture: file
-    }));
+    setProfilePicture(e.target.files?.[0] || null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
-    setError('');
 
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append('fullName', formData.fullName);
-      formDataToSend.append('email', formData.email);
-      formDataToSend.append('username', formData.username);
-      formDataToSend.append('password', formData.password);
-      formDataToSend.append('bio', formData.bio);
-      
-      if (formData.profilePicture) {
-        formDataToSend.append('profilePicture', formData.profilePicture);
+      const data = new FormData();
+      data.append("fullName", fullName);
+      data.append("email", email);
+      data.append("username", username);
+      data.append("password", password);
+      data.append("bio", bio);
+      if (profilePicture) {
+        data.append("profilePicture", profilePicture);
       }
 
-      const response = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
-        body: formDataToSend,
-      });
+      const response = await api.post("/auth/register", data);
 
-      const result = await response.json();
-
-      if (response.ok) {
-        alert('Registration successful!');
-        navigate('/login');
-      } else {
-        setError(result.message || 'Registration failed');
+      if (response.status === 201) {
+        alert("Registration successful!");
+        const user = response.data.user;
+        setLoginState({
+          isLoggedIn: true,
+          fullName: user.fullName,
+          email: user.email,
+          username: user.username,
+          profilePicture: user.profilePicture
+        });
+        navigate("/");
       }
-    } catch (err) {
-      setError('Network error. Please try again.');
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create your account
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <input
-                id="fullName"
-                name="fullName"
-                type="text"
-                required
-                value={formData.fullName}
-                onChange={handleInputChange}
-                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Full Name"
-              />
-            </div>
+        <h2 className="text-center text-3xl font-bold text-gray-900">
+          Create your account
+        </h2>
 
-            <div>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={formData.email}
-                onChange={handleInputChange}
-                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email Address"
-              />
-            </div>
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <input
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required
+            placeholder="Full Name"
+            className="w-full px-3 py-2 border rounded-md"
+          />
 
-            <div>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                required
-                value={formData.username}
-                onChange={handleInputChange}
-                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Username"
-              />
-            </div>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="Email Address"
+            className="w-full px-3 py-2 border rounded-md"
+          />
 
-            <div>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={formData.password}
-                onChange={handleInputChange}
-                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-              />
-            </div>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            placeholder="Username"
+            className="w-full px-3 py-2 border rounded-md"
+          />
 
-            <div>
-              <textarea
-                id="bio"
-                name="bio"
-                rows={3}
-                value={formData.bio}
-                onChange={handleInputChange}
-                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Bio (Optional)"
-              />
-            </div>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder="Password"
+            className="w-full px-3 py-2 border rounded-md"
+          />
 
-            <div>
-              <input
-                id="profilePicture"
-                name="profilePicture"
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-              />
-            </div>
-          </div>
+          <textarea
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            rows={3}
+            placeholder="Bio (Optional)"
+            className="w-full px-3 py-2 border rounded-md"
+          />
 
-          {error && (
-            <div className="text-red-600 text-sm text-center">
-              {error}
-            </div>
-          )}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="w-full text-sm text-gray-500"
+          />
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              {loading ? 'Creating Account...' : 'Create Account'}
-            </button>
-          </div>
+          {error && <p className="text-red-600 text-sm">{error}</p>}
 
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => navigate('/login')}
-              className="text-indigo-600 hover:text-indigo-500"
-            >
-              Already have an account? Sign in
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2 px-4 text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {loading ? "Creating Account..." : "Create Account"}
+          </button>
         </form>
+
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => navigate("/login")}
+            className="text-indigo-600 hover:underline"
+          >
+            Already have an account? Sign in
+          </button>
+        </div>
       </div>
     </div>
   );

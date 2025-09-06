@@ -32,4 +32,15 @@ export const userRegisterSchema = z.object({
     .optional(),
 });
 
+export const userLoginSchema = z.object({
+  emailOrUsername: z
+    .string("Email or username is required")
+    .min(1, "Email or username is required"),
+
+  password: z
+    .string("Password is required")
+    .min(1, "Password is required"),
+});
+
 export type UserRegisterInput = z.infer<typeof userRegisterSchema>;
+export type UserLoginInput = z.infer<typeof userLoginSchema>;

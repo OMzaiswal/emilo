@@ -1,39 +1,90 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { api } from "../api/axios";
+
+interface Author {
+  _id: string;
+  fullName: string;
+  username: string;
+  profilePicture?: string;
+}
+
+interface Comment {
+  _id: string;
+  content: string;
+}
+
+interface Post {
+  _id: string;
+  content: string;
+  images?: string[];
+  author: Author;
+  comments: Comment[];
+  createdAt: string;
+}
 
 export const HomePage: React.FC = () => {
-  const navigate = useNavigate();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const response = await api.get("/posts/feed");
+        setPosts(response.data.posts);
+      } catch (err: any) {
+        setError("Failed to load posts");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
+  if (loading) return <p className="text-center mt-8">Loading feed...</p>;
+  if (error) return <p className="text-center mt-8 text-red-600">{error}</p>;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Welcome to Emilo
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Your food delivery platform
-        </p>
-      </div>
-
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <div className="space-y-6">
-            <button
-              onClick={() => navigate('/register')}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Register
-            </button>
-            
-            <button
-              onClick={() => navigate('/login')}
-              className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Login
-            </button>
-          </div>
+    <div className="max-w-2xl mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Feed</h1>
+      {posts.length === 0 ? (
+        <p className="text-gray-500">No posts yet.</p>
+      ) : (
+        <div className="space-y-4">
+          {posts.map((post) => (
+            <div key={post._id} className="p-4 border rounded-lg shadow-sm">
+              <div className="flex items-center mb-2">
+                <img
+                  src={post.author.profilePicture || "/default-avatar.png"}
+                  alt={post.author.fullName}
+                  className="w-10 h-10 rounded-full mr-2"
+                />
+                <div>
+                  <p className="font-semibold">{post.author.fullName}</p>
+                  <p className="text-sm text-gray-500">@{post.author.username}</p>
+                </div>
+              </div>
+              <p className="mb-2">{post.content}</p>
+              {post.images && post.images.length > 0 && (
+                <div className="grid grid-cols-2 gap-2">
+                  {post.images.map((img, idx) => (
+                    <img
+                      key={idx}
+                      src={img}
+                      alt="post"
+                      className="rounded-md w-full h-auto"
+                    />
+                  ))}
+                </div>
+              )}
+              <p className="text-sm text-gray-500 mt-2">
+                {post.comments.length} comments
+              </p>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
     </div>
   );
 };
