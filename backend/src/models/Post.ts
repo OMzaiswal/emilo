@@ -7,7 +7,7 @@ export interface IPost extends Document {
   videos: string[];
   videoThumbnail: string;
   location: string;
-  visibility: "public" | "private" | "followers";
+  visibility: "public" | "private";
   views: number;
   likes: string[];
   comments: string[];
@@ -20,7 +20,7 @@ const postSchema = new Schema<IPost>({
   videos: { type: [String], default: [] },
   videoThumbnail: { type: String, default: "" },
   location: { type: String, required: true },
-  visibility: { type: String, enum: ["public","private","followers"], default: "public" },
+  visibility: { type: String, enum: ["public","private"], default: "public" },
   views: { type: Number, default: 0 },
   likes: { type: [String], default: [] },
   comments: { type: [String], default: [] },
